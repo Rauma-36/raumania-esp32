@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bảng điều khiển ESP32</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e4e9e6;--panel:#f4f7f5;--ink:#17262b;--mute:#5d6f74;--line:#c3ceca;
+  --on:#0b7a75;--onink:#fff;--on-glow:rgba(11,122,117,.35);--wait:#c98200;--off:#8b9a9e;--bad:#b3392b;--track:#b9c5c1;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f181b;--panel:#18252a;--ink:#e3ece9;--mute:#8fa3a8;--line:#2b3d43;
+  --on:#38c9bf;--onink:#08201e;--on-glow:rgba(56,201,191,.4);--wait:#f0b032;--off:#5b6d72;--bad:#ef7a6a;--track:#33454b;color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f181b;--panel:#18252a;--ink:#e3ece9;--mute:#8fa3a8;--line:#2b3d43;
+  --on:#38c9bf;--onink:#08201e;--on-glow:rgba(56,201,191,.4);--wait:#f0b032;--off:#5b6d72;--bad:#ef7a6a;--track:#33454b;color-scheme:dark;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 "Barlow Semi Condensed",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:540px;margin:0 auto;padding:16px 14px 40px;display:grid;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 12px}
+h1{font-size:24px;font-weight:700;margin:0}
+h2{font-size:15px;font-weight:600;color:var(--mute);margin:0 0 6px}
+.clock{text-align:right;font-variant-numeric:tabular-nums;line-height:1.15}
+.clock b{font-size:30px;font-weight:600;display:block}
+.clock span{font-size:14px;color:var(--mute)}
+.badges{display:flex;gap:14px;font-size:15px;color:var(--mute);margin-top:4px}
+.badges span{display:inline-flex;align-items:center;gap:6px}
+section,details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.lamp{width:12px;height:12px;border-radius:50%;background:var(--off);flex:none;display:inline-block}
+.lamp.on{background:var(--on);box-shadow:0 0 0 3px var(--on-glow)}
+.lamp.wait{background:var(--wait)}
+.lamp.bad{background:var(--bad)}
+.sensors{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.val{font-size:44px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.val small{font-size:20px;font-weight:500;color:var(--mute);margin-left:2px}
+.lbl{color:var(--mute);font-size:15px}
+.warn .val,.warn .lbl{color:var(--bad)}
+.stale .val{opacity:.4}
+.age{grid-column:1/-1;color:var(--mute);font-size:14px}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.info{flex:1;min-width:0}
+.nm{font-size:18px}
+.stt{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
+.btns{display:flex;gap:6px;flex:none}
+.b{font:inherit;font-weight:600;min-height:40px;min-width:54px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.b.on[aria-pressed="true"]{background:var(--on);border-color:var(--on);color:var(--onink)}
+.b.off[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.b:disabled,input:disabled{opacity:.45;cursor:not-allowed}
+.b:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--on);outline-offset:2px}
+.speed{display:flex;align-items:center;gap:12px;padding:2px 0 10px 24px}
+.speed input{flex:1;accent-color:var(--on);height:32px}
+.speed output{width:50px;text-align:right;font-variant-numeric:tabular-nums}
+.sched{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;padding-top:10px;border-top:1px solid var(--line)}
+.sched .cur{grid-column:1/-1;font-size:14px;color:var(--mute)}
+label{display:grid;gap:4px;font-size:14px;color:var(--mute)}
+input[type=text],input[type=password],input[type=number],input[type=time]{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.hint{color:var(--wait);font-size:15px;min-height:1.2em;margin:0}
+summary{cursor:pointer;font-weight:600;color:var(--mute);font-size:15px}
+.form{display:grid;grid-template-columns:1fr 90px;gap:10px;margin-top:10px}
+.full{grid-column:1/-1}
+button.go{font:inherit;font-weight:600;font-size:17px;padding:11px;border-radius:8px;border:0;background:var(--on);color:var(--onink);cursor:pointer}
+button.go.stop{background:var(--bad);color:#fff}
+#log{margin:0;padding:0;list-style:none;font-size:14px;color:var(--mute);max-height:190px;overflow-y:auto;font-variant-numeric:tabular-nums}
+#log li{padding:2px 0}
+#log li.ev{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Bảng điều khiển ESP32</h1>
+      <div class="badges"><span><i class="lamp" id="lBroker"></i>Broker</span><span><i class="lamp" id="lEsp"></i>ESP32</span></div>
+    </div>
+    <div class="clock"><b id="clk">--:--:--</b><span id="dt">Giờ Hà Nội</span><br><span id="esptime">ESP32: chưa có giờ</span></div>
+  </header>
+
+  <section id="sensors" class="stale">
+    <h2>Cảm biến DHT22</h2>
+    <div class="sensors">
+      <div id="bt"><div class="val"><span id="t">--</span><small>°C</small></div><div class="lbl">Nhiệt độ</div></div>
+      <div id="bh"><div class="val"><span id="h">--</span><small>%</small></div><div class="lbl">Độ ẩm</div></div>
+      <div class="age" id="age">Chưa có dữ liệu</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Thiết bị</h2>
+    <div id="devs"></div>
+    <div class="speed">
+      <span class="lbl">Tốc độ quạt</span>
+      <input type="range" id="sp" min="0" max="100" step="5" value="100" data-ctl aria-label="Tốc độ quạt" disabled>
+      <output id="spv" for="sp">100%</output>
+    </div>
+  </section>
+
+  <section>
+    <h2>Chế độ tự động</h2>
+    <div id="autos"></div>
+    <div class="sched">
+      <label>Giờ bật Đèn 1<input type="time" id="tbat" value="18:00" data-ctl disabled></label>
+      <label>Giờ tắt Đèn 1<input type="time" id="ttat" value="23:00" data-ctl disabled></label>
+      <button class="b" id="bsave" data-ctl disabled>Lưu giờ</button>
+      <div class="cur" id="cur">Quạt tự bật khi trên 32 °C, sấy tự bật khi độ ẩm trên 85 %.</div>
+    </div>
+  </section>
+
+  <p class="hint" id="hint" role="status"></p>
+
+  <details id="conn" open>
+    <summary>Kết nối broker MQTT</summary>
+    <div class="form">
+      <label>Host HiveMQ<input type="text" id="host" placeholder="xxxxxx.s1.eu.hivemq.cloud" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label>Cổng WSS<input type="number" id="port" value="8884"></label>
+      <label class="full">Tên đăng nhập<input type="text" id="user" autocomplete="username" autocapitalize="off"></label>
+      <label class="full">Mật khẩu<input type="password" id="pass" autocomplete="current-password"></label>
+      <button class="go full" id="btn">Kết nối</button>
+    </div>
+  </details>
+
+  <section>
+    <h2>Nhật ký</h2>
+    <ul id="log"></ul>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const DEV = [
+  {id:'den1', name:'Đèn 1', cmd:'nha/den1', st:'nha/den1/state', timer:true},
+  {id:'den2', name:'Đèn 2', cmd:'nha/den2', st:'nha/den2/state', timer:true},
+  {id:'den3', name:'Đèn 3', cmd:'nha/den3', st:'nha/den3/state', timer:true},
+  {id:'motor', name:'Quạt (motor)', cmd:'nha/motor', st:'nha/motor/state', timer:true},
+  {id:'suoi', name:'Sấy/sưởi (LED)', cmd:'nha/suoi', st:'nha/suoi/state', timer:true}
+];
+const AUTO = [
+  {id:'lich', name:'Lịch bật/tắt Đèn 1', cmd:'nha/lich/enable', st:'nha/lich/enable/state'},
+  {id:'aq', name:'Quạt tự động', cmd:'nha/auto/quat', st:'nha/auto/quat/state'},
+  {id:'as', name:'Sấy tự động', cmd:'nha/auto/suoi', st:'nha/auto/suoi/state'}
+];
+const ALL = DEV.concat(AUTO);
+const T_SPEED = 'nha/motor/speed', T_SPEED_ST = 'nha/motor/speed/state';
+const S = {}; ALL.forEach(c => S[c.id] = {v:null, since:0, exact:false, pend:0});
+let client = null, brokerOn = false, espOn = false, lastSensor = 0, spd = 100, sched = {bat:null, tat:null};
+
+function load(){ try{ ['host','port','user'].forEach(k=>{const v=localStorage.getItem('esp32_'+k); if(v) $(k).value=v;}); }catch(e){} }
+function save(){ try{ ['host','port','user'].forEach(k=>localStorage.setItem('esp32_'+k,$(k).value)); }catch(e){} }
+function log(msg, cls){
+  const li = document.createElement('li'); if (cls) li.className = cls;
+  li.textContent = new Date().toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour12:false}) + '  ' + msg;
+  const ul = $('log'); ul.prepend(li); while (ul.children.length > 50) ul.lastChild.remove();
+}
+const lamp = (el, c) => { el.className = 'lamp ' + (c||''); };
+function dur(ms){
+  const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return h ? h+' giờ '+m+' phút' : m ? m+' phút '+x+' giây' : x+' giây';
+}
+
+/* ---- dựng hàng thiết bị: mỗi thiết bị có nút Bật và nút Tắt riêng ---- */
+function build(c, box){
+  const r = document.createElement('div'); r.className = 'row';
+  r.innerHTML = '<i class="lamp" id="lp-'+c.id+'"></i><div class="info"><div class="nm">'+c.name+'</div><div class="stt" id="st-'+c.id+'"></div></div>'+
+    '<div class="btns"><button class="b on" id="bn-'+c.id+'" aria-pressed="false" aria-label="Bật '+c.name+'" data-ctl disabled>Bật</button>'+
+    '<button class="b off" id="bf-'+c.id+'" aria-pressed="false" aria-label="Tắt '+c.name+'" data-ctl disabled>Tắt</button></div>';
+  $(box).appendChild(r);
+  $('bn-'+c.id).addEventListener('click', () => send(c,'ON'));
+  $('bf-'+c.id).addEventListener('click', () => send(c,'OFF'));
+}
+DEV.forEach(c => build(c,'devs')); AUTO.forEach(c => build(c,'autos'));
+
+function send(c, want){
+  if (!client || !brokerOn || !espOn) return;
+  const s = S[c.id];
+  if (s.v === want){ log(c.name + ' đã ' + (want==='ON'?'bật':'tắt') + ' sẵn.'); return; }
+  client.publish(c.cmd, want);
+  log('Gửi ' + c.cmd + ' = ' + want);
+  clearTimeout(s.pend);
+  s.pend = setTimeout(() => { s.pend = 0; render(c); log('ESP32 chưa xác nhận: ' + c.name); }, 4000);
+  render(c);
+}
+
+function render(c){
+  const s = S[c.id], on = s.v === 'ON', off = s.v === 'OFF';
+  $('bn-'+c.id).setAttribute('aria-pressed', on);
+  $('bf-'+c.id).setAttribute('aria-pressed', off);
+  $('lp-'+c.id).className = 'lamp ' + (s.pend ? 'wait' : on ? 'on' : '');
+  let t;
+  if (!brokerOn) t = 'Chưa kết nối broker';
+  else if (!espOn) t = 'Không rõ (ESP32 offline)';
+  else if (s.pend) t = 'Đang chờ ESP32 xác nhận...';
+  else if (s.v === null) t = 'Chưa có trạng thái';
+  else if (off) t = c.timer ? 'Đang tắt' : 'Đang tắt (không tự động)';
+  else {
+    t = c.id === 'motor' ? 'Đang chạy · ' + spd + '%' : (c.timer ? 'Đang bật' : 'Đang bật (tự động)');
+    if (c.timer && s.since) t += ' · ' + (s.exact ? '' : '≥ ') + dur(Date.now() - s.since);
+  }
+  $('st-'+c.id).textContent = t;
+}
+function renderAll(){ ALL.forEach(render); }
+
+function refreshControls(){
+  const ok = brokerOn && espOn;
+  document.querySelectorAll('[data-ctl]').forEach(e => e.disabled = !ok);
+  $('hint').textContent = !brokerOn ? 'Chưa kết nối broker.' : (!espOn ? 'ESP32 đang offline, chưa thể gửi lệnh.' : '');
+  $('sensors').classList.toggle('stale', !ok || !lastSensor || Date.now()-lastSensor > 20000);
+  renderAll();
+}
+
+/* ---- tốc độ quạt ---- */
+$('sp').addEventListener('input', () => { $('spv').textContent = $('sp').value + '%'; });
+$('sp').addEventListener('change', () => {
+  if (!client || !brokerOn) return;
+  client.publish(T_SPEED, String($('sp').value)); log('Gửi ' + T_SPEED + ' = ' + $('sp').value);
+});
+
+/* ---- lịch bật/tắt đèn ---- */
+$('bsave').addEventListener('click', () => {
+  const a = $('tbat').value, b = $('ttat').value, ok = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if (!ok.test(a) || !ok.test(b)){ log('Giờ không hợp lệ, nhập dạng HH:MM.'); return; }
+  client.publish('nha/lich/bat', a); client.publish('nha/lich/tat', b);
+  log('Gửi lịch Đèn 1: bật ' + a + ', tắt ' + b);
+});
+function showSched(){
+  if (sched.bat && sched.tat) $('cur').textContent = 'ESP32 đang dùng lịch: bật ' + sched.bat + ', tắt ' + sched.tat + '. Quạt tự bật khi trên 32 °C, sấy tự bật khi độ ẩm trên 85 %.';
+}
+
+/* ---- MQTT ---- */
+function connect(){
+  const host = $('host').value.trim().replace(/^wss?:\/\//,'').replace(/[\/:].*$/,'');
+  const port = Number($('port').value) || 8884;
+  if (!host){ log('Nhập host của broker trước.'); $('host').focus(); return; }
+  save();
+  lamp($('lBroker'),'wait'); $('btn').textContent = 'Ngắt kết nối'; $('btn').classList.add('stop');
+  log('Đang kết nối ' + host + ':' + port + ' ...');
+  client = mqtt.connect('wss://' + host + ':' + port + '/mqtt', {
+    username: $('user').value, password: $('pass').value,
+    clientId: 'web_' + Math.random().toString(16).slice(2,10),
+    reconnectPeriod: 3000, connectTimeout: 8000, clean: true
+  });
+  client.on('connect', () => {
+    brokerOn = true; lamp($('lBroker'),'on'); log('Đã kết nối broker.');
+    const topics = ['nha/status','nha/nhietdo','nha/doam','nha/time','nha/event',T_SPEED_ST,'nha/lich/bat/state','nha/lich/tat/state'].concat(ALL.map(c => c.st));
+    client.subscribe(topics, err => { if (err) log('Lỗi subscribe: ' + err.message); });
+    $('conn').open = false; refreshControls();
+  });
+  client.on('message', (topic, buf) => {
+    const v = buf.toString().trim();
+    if (topic === 'nha/status'){
+      espOn = v === 'online'; lamp($('lEsp'), espOn ? 'on' : 'bad'); log('ESP32 ' + v); refreshControls(); return;
+    }
+    if (topic === 'nha/nhietdo' || topic === 'nha/doam'){
+      const n = Number(v); if (isNaN(n)) return;
+      const isT = topic === 'nha/nhietdo';
+      $(isT ? 't' : 'h').textContent = n.toFixed(1);
+      $(isT ? 'bt' : 'bh').classList.toggle('warn', isT ? n > 32 : n > 85);
+      lastSensor = Date.now(); refreshControls(); return;
+    }
+    if (topic === 'nha/time'){ $('esptime').textContent = /^\d{4}-/.test(v) ? 'ESP32: ' + v : 'ESP32 chưa đồng bộ giờ'; return; }
+    if (topic === 'nha/event'){ log(v, 'ev'); return; }
+    if (topic === T_SPEED_ST){
+      const n = Number(v); if (isNaN(n)) return;
+      spd = n; if (document.activeElement !== $('sp')){ $('sp').value = n; $('spv').textContent = n + '%'; }
+      render(DEV[3]); return;
+    }
+    if (topic === 'nha/lich/bat/state' || topic === 'nha/lich/tat/state'){
+      if (!/^\d\d:\d\d$/.test(v)) return;
+      const k = topic.indexOf('/bat/') > 0 ? 'bat' : 'tat'; sched[k] = v;
+      const inp = $(k === 'bat' ? 'tbat' : 'ttat'); if (document.activeElement !== inp) inp.value = v;
+      showSched(); return;
+    }
+    const c = ALL.find(x => x.st === topic);
+    if (c && (v === 'ON' || v === 'OFF')){
+      const s = S[c.id], prev = s.v;
+      s.v = v; clearTimeout(s.pend); s.pend = 0;
+      if (v === 'ON' && prev !== 'ON'){ s.since = Date.now(); s.exact = prev === 'OFF'; }
+      if (v === 'OFF') s.since = 0;
+      render(c);
+    }
+  });
+  client.on('reconnect', () => lamp($('lBroker'),'wait'));
+  client.on('close', () => {
+    brokerOn = false; espOn = false;
+    lamp($('lBroker'), client && !client.disconnecting ? 'wait' : ''); lamp($('lEsp'),''); refreshControls();
+  });
+  client.on('error', e => log('Lỗi: ' + (e && e.message ? e.message : e)));
+}
+function disconnect(){
+  if (client){ client.end(true); client = null; }
+  brokerOn = false; espOn = false; lamp($('lBroker'),''); lamp($('lEsp'),'');
+  $('btn').textContent = 'Kết nối'; $('btn').classList.remove('stop');
+  log('Đã ngắt kết nối.'); refreshControls();
+}
+$('btn').addEventListener('click', () => client ? disconnect() : connect());
+
+/* ---- đồng hồ giờ Hà Nội + cập nhật thời gian chạy mỗi giây ---- */
+const fT = new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+const fD = new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+function tick(){
+  const now = new Date();
+  $('clk').textContent = fT.format(now); $('dt').textContent = 'Giờ Hà Nội · ' + fD.format(now);
+  DEV.forEach(c => { if (S[c.id].v === 'ON') render(c); });
+  if (lastSensor){
+    const s = Math.round((Date.now() - lastSensor) / 1000);
+    $('age').textContent = 'Cập nhật ' + s + ' giây trước';
+    $('sensors').classList.toggle('stale', !(brokerOn && espOn) || s > 20);
+  }
+}
+setInterval(tick, 1000); tick();
+load(); refreshControls();
+</script>
+</body>
+</html>
