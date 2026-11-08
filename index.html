@@ -118,7 +118,7 @@ button.go.stop{background:var(--bad);color:#fff}
     <summary>Kết nối broker MQTT</summary>
     <div class="form">
       <label>Host HiveMQ<input type="text" id="host" placeholder="xxxxxx.s1.eu.hivemq.cloud" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-      <label>Cổng WSS<input type="number" id="port" value="8884"></label>
+      <label>Cổng WSS<input type="number" id="port" value="8084"></label>
       <label class="full">Tên đăng nhập<input type="text" id="user" autocomplete="username" autocapitalize="off"></label>
       <label class="full">Mật khẩu<input type="password" id="pass" autocomplete="current-password"></label>
       <button class="go full" id="btn">Kết nối</button>
@@ -235,7 +235,7 @@ function showSched(){
 /* ---- MQTT ---- */
 function connect(){
   const host = $('host').value.trim().replace(/^wss?:\/\//,'').replace(/[\/:].*$/,'');
-  const port = Number($('port').value) || 8884;
+  const port = Number($("port").value) || 8084;
   if (!host){ log('Nhập host của broker trước.'); $('host').focus(); return; }
   save();
   lamp($('lBroker'),'wait'); $('btn').textContent = 'Ngắt kết nối'; $('btn').classList.add('stop');
