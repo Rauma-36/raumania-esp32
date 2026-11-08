@@ -247,8 +247,7 @@ function connect(){
   });
   client.on('connect', () => {
     brokerOn = true; lamp($('lBroker'),'on'); log('Đã kết nối broker.');
-    const topics = ['nha/status','nha/nhietdo','nha/doam','nha/time','nha/event',T_SPEED_ST,'nha/lich/bat/state','nha/lich/tat/state'].concat(ALL.map(c => c.st));
-    client.subscribe(topics, err => { if (err) log('Lỗi subscribe: ' + err.message); });
+    client.subscribe('nha/#', err => { if (err) log('Lỗi subscribe: ' + err.message); });
     $('conn').open = false; refreshControls();
   });
   client.on('message', (topic, buf) => {
